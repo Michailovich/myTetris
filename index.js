@@ -1,7 +1,12 @@
 import Game from "./src/game.js";
+import View from "./src/view.js";
+
+const element = document.querySelector('#root');
 
 const game = new Game();
+const view = new View(element,480,640,20,10)
 
 window.game = game;
+window.view = view;
 
-console.log(game);
+view.render(game.playfield);
