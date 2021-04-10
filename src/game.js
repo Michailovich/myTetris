@@ -1,10 +1,18 @@
 export default class Game {
-    scores = 0;
-    lines = 0;
-    level = 0;
-    playfield = this.createPlayfield();
-    activeFigure = this.createFigure();
-    nextFigure = this.createFigure();
+    static points = {
+        '1':40,
+        '2':100,
+        '3':300,
+        '4':1200
+    };
+
+    constructor() {
+        this.reset();
+    }
+
+    get level(){
+        return Math.floor(this.lines * 0.1);
+    }
 
     getState(){
         const playfield = this.createPlayfield();
@@ -27,8 +35,22 @@ export default class Game {
         }
 
         return {
-            playfield
+            scores:this.scores,
+            level:this.level,
+            lines:this.lines,
+            nextFigure:this.nextFigure,
+            playfield,
+            isGameOver: this.topOut
         }
+    }
+
+    reset(){
+        this.scores = 0;
+        this.lines = 0;
+        this.topOut = false;
+        this.playfield = this.createPlayfield();
+        this.activeFigure = this.createFigure();
+        this.nextFigure = this.createFigure();
     }
 
     createPlayfield(){
@@ -92,11 +114,19 @@ export default class Game {
     }
 
     moveFigureDown(){
+        if(this.topOut) return;
+
         this.activeFigure.y += 1;
         if(this.hasCollision()){
             this.activeFigure.y -= 1;
             this.lockFigure();
+            let clearedLines = this.clearLines();
+            this.updateScore(clearedLines)
             this.updateFigures();
+        }
+
+        if(this.hasCollision()){
+            this.topOut = true;
         }
     }
 
@@ -128,6 +158,37 @@ export default class Game {
                 } 
             }
         }
+    }
+
+    clearLines(){
+        const rows = 20;
+        const columns = 10;
+        let lines = [];
+
+        for (let y = rows - 1; y >= 0; y--) {
+            let numbersOfBlocks = 0;
+
+            for (let x = 0; x < columns; x++) {
+                if(this.playfield[y][x]){
+                    numbersOfBlocks +=1;
+                }
+            }
+
+            if(numbersOfBlocks === 0){
+                break;
+            }else if(numbersOfBlocks < columns){
+                continue;
+            }else if(numbersOfBlocks === columns){
+                lines.unshift(y)
+            }
+        }
+
+        for(let index of lines){
+            this.playfield.splice(index,1);
+            this.playfield.unshift(new Array(columns).fill(0));
+        }
+
+        return lines.length;
     }
 
     createFigure(){
@@ -200,5 +261,12 @@ export default class Game {
     updateFigures(){
         this.activeFigure = this.nextFigure;
         this.nextFigure = this.createFigure();
+    }
+
+    updateScore(cleanedLines){
+        if(cleanedLines > 0){
+            this.scores += Game.points[cleanedLines] * (this.level + 1);
+            this.lines += cleanedLines;
+        }
     }
 }
